@@ -1,0 +1,35 @@
+{
+  "name": "picko",
+  "version": "1.0.0",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node index.js"
+  },
+  "keywords": [
+    "socket.io",
+    "node.js",
+    "javascript",
+    "chat",
+    "server",
+    "client",
+    "web",
+    "realtime",
+    "framework",
+    "websocket",
+    "webrtc",
+    "signaling",
+    "socket"
+  ],
+  "author": "Antiihope",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/antiihope/pickojs.git"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "socket.io": "^4.6.1",
+    "socket.io-client": "^4.6.1",
+    "express": "^4.17.1"
+  },
+  "description": "Picko is a powerful hybrid HTTP server that utilizes the best of both worlds with its combination of Express and Socket.IO. This package provides a seamless way to handle HTTP requests, making it a perfect tool for developers looking to create a flexible and scalable server."
+}
