@@ -1,14 +1,18 @@
 const Picko = require('./server');
 const picko = new Picko({
-  auth: (req, reject, next) => {
-    if (req.headers['x-auth'] !== '123') {
-      reject();
-    } else {
-      next();
-    }
+  cors: {
+    origin: '*',
+    methods: ['GET', 'POST'],
   },
-  maxHttpBufferSize: 2e8,
-  port: 3000,
+});
+
+// Authentication for both Express and Socket.io
+picko.authenticate((headers, callback) => {
+  if (headers.authorization === '555') {
+    callback(null, true); // Authorized
+  } else {
+    callback(401, false); // Unauthorized
+  }
 });
 
 picko.get('/hello', (req, res) => {
@@ -17,6 +21,10 @@ picko.get('/hello', (req, res) => {
 
 picko.post('/sad', (req, res) => {
   res.send(req.body);
+});
+
+picko.put('/sad', (req, res) => {
+  res.send({ 1: 9 });
 });
 picko.listen(3000, () => {
   console.log('Server started on port 3000');

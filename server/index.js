@@ -1,88 +1,129 @@
+// Import the required libraries/modules
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
+const cors = require('cors');
 
+// Create a class called Picko
 class Picko {
   constructor(options) {
-    this.app = express();
-    this.server = http.createServer(this.app);
+    // Initialize some properties
+    this.app = express(); // Express instance
+    this.server = http.createServer(this.app); // HTTP server instance
     this.io = new Server(this.server, {
-      maxHttpBufferSize: 2e8, // 200MB
+      // Socket.io instance
+      maxHttpBufferSize: 2e8, // Specify maximum allowed buffer size
+      cors: options.cors, // Allow cross-origin resource sharing
     });
-    this.routes = {};
-    this.app.use(express.json());
-    this.app.use(express.urlencoded({ extended: true }));
-    this.rejected = {};
+    this.routes = {}; // Mapping of routes to callbacks
+    this.rejected = {}; // Initialize an empty object for rejected requests
 
-    // Authentication
-    if (options.auth) {
-      this.app.use((req, res, next) => {
-        const reject = () => {
-          res.status(401);
-          res.send('Unauthorized');
-        };
+    // Set up middleware for request and response objects
+    this.app.use(express.json()); // Parse request bodies as JSON
+    this.app.use(express.urlencoded({ extended: true })); // Parse URL-encoded request bodies
 
-        return options.auth(req, reject, next);
-      });
-      this.io.use((socket, next) => {
-        const reject = () => {
-          this.rejected[socket.id] = true;
-          socket.disconnect();
-        };
-
-        return options.auth(socket.handshake, reject, next);
-      });
+    // If CORS is enabled, use it as middleware
+    if (options.cors) {
+      this.app.use(cors(options.cors));
     }
 
+    // Set up event listener for incoming socket connections
     this.io.on('connection', (socket) => {
+      // Log that a user has connected
       console.log('a user connected');
+
+      // Listen for disconnection events and log them when they happen
       socket.on('disconnect', () => {
         console.log('user disconnected');
       });
-      socket.on('GET', (path, callback) => {
-        if (this.routes[path]) {
-          const req = { query: {} };
-          const res = {
-            send: (data) => {
-              callback(data);
-            },
-          };
-          this.routes[path](req, res);
-        }
-      });
-      socket.on('POST', (path, data, callback) => {
-        if (this.routes[path]) {
-          const req = { body: data };
-          const res = {
-            send: (data) => {
-              callback(data);
-            },
-          };
-          this.routes[path](req, res);
-        }
+
+      // Function that builds the response to send back to the client
+      const buildResponse = (method, path, data, callback) => {
+        // Check authorization before invoking the route's callback
+        this.authFunction(
+          socket.handshake.headers,
+          (statusCode, authorized) => {
+            if (statusCode) {
+              return callback({ error: 'Unauthorized' }, statusCode);
+            }
+            if (!authorized) {
+              return callback({ error: 'Forbidden' }, 403);
+            }
+
+            const routeKey = `${method}-${path}`;
+            const routeCallback = this.routes[routeKey];
+
+            // If a route isn't found, return an error message
+            if (!routeCallback) {
+              return callback({ error: 'Route not found' });
+            }
+
+            // If the route is found, invoke the route's callback function
+            routeCallback(
+              { body: data },
+              {
+                send: (data) => {
+                  callback({ data });
+                },
+                error: (error) => {
+                  callback({ error: error.message });
+                },
+              }
+            );
+          }
+        );
+      };
+      // Array of supported HTTP methods
+      const supportedMethods = ['GET', 'POST', 'PUT', 'DELETE'];
+      // For each of the supported HTTP methods, set up a listener on the socket
+      supportedMethods.forEach((method) => {
+        socket.on(method, (path, data, callback) =>
+          buildResponse(method, path, data, callback)
+        );
       });
     });
   }
-
+  // Method to start listening on a given port
   listen(port, callback) {
     this.server.listen(port, callback);
   }
 
+  // Method to add a new route with a given method and path
+  addRoute(method, path, callback) {
+    const routeKey = `${method}-${path}`;
+    this.routes[routeKey] = (req, res) => {
+      try {
+        callback(req, res);
+      } catch (error) {
+        console.error(`Error handling ${method} ${path}:`, error);
+        res.status(500).send('Internal Server Error');
+      }
+    };
+    // Add the route to the Express app with the specified method and path
+    this.app[method.toLowerCase()](path, (req, res) => {
+      this.routes[routeKey](req, res);
+    });
+  }
+  // Method to add a new GET route
   get(path, callback) {
-    this.app.get(path, (req, res) => {
-      callback(req, res);
-    });
-    this.routes[path] = callback;
+    this.addRoute('GET', path, callback);
   }
-
+  // Method to add a new POST route
   post(path, callback) {
-    this.app.post(path, (req, res) => {
-      callback(req, res);
-    });
-    this.routes[path] = callback;
+    this.addRoute('POST', path, callback);
   }
-
-  // Implement other HTTP methods similar to how GET and POST are implemented.
+  // Method to add a new PUT route
+  put(path, callback) {
+    this.addRoute('PUT', path, callback);
+  }
+  // Method to add a new DELETE route
+  delete(path, callback) {
+    this.addRoute('DELETE', path, callback);
+  }
+  authenticate(authFunction) {
+    this.authFunction = authFunction;
+  }
 }
 
+// Export the Picko class
 module.exports = Picko;
