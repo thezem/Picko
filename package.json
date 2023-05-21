@@ -1,6 +1,6 @@
 {
   "name": "picko",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -22,7 +22,7 @@
   "author": "Antiihope",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/antiihope/pickojs.git"
+    "url": "git+https://github.com/antiihope/picko.git"
   },
   "license": "MIT",
   "dependencies": {
