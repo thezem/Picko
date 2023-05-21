@@ -1,4 +1,3 @@
-// client/index.js
 // Importing socket.io-client module
 const io = require('socket.io-client');
 

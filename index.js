@@ -2,7 +2,6 @@ const Picko = require('./server');
 const picko = new Picko({
   cors: {
     origin: '*',
-    methods: ['GET', 'POST'],
   },
 });
 
@@ -28,4 +27,9 @@ picko.put('/sad', (req, res) => {
 });
 picko.listen(3000, () => {
   console.log('Server started on port 3000');
+});
+
+picko.post('/users', (req, res) => {
+  console.log(req.body);
+  res.send(req.body);
 });
