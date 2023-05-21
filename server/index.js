@@ -26,7 +26,10 @@ class Picko {
     if (options.cors) {
       this.app.use(cors(options.cors));
     }
-
+    // default authentication function
+    this.authFunction = (headers, callback) => {
+      callback(null, true);
+    };
     // Set up event listener for incoming socket connections
     this.io.on('connection', (socket) => {
       // Log that a user has connected
@@ -122,6 +125,17 @@ class Picko {
   }
   authenticate(authFunction) {
     this.authFunction = authFunction;
+    this.app.use((req, res, next) => {
+      this.authFunction(req.headers, (statusCode, authorized) => {
+        if (statusCode) {
+          return res.status(statusCode).send('Unauthorized');
+        }
+        if (!authorized) {
+          return res.status(403).send('Forbidden');
+        }
+        next();
+      });
+    });
   }
 }
 
