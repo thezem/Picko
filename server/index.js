@@ -12,17 +12,28 @@ class Picko {
     this.routes = {};
     this.app.use(express.json());
     this.app.use(express.urlencoded({ extended: true }));
-    this.app.use((req, res, next) => {
-      if (options.auth) {
-        if (options.auth(req, res)) {
-          next();
-        } else {
-          res.status(401).send('Unauthorized');
-        }
-      } else {
-        next();
-      }
-    });
+    this.rejected = {};
+
+    // Authentication
+    if (options.auth) {
+      this.app.use((req, res, next) => {
+        const reject = () => {
+          res.status(401);
+          res.send('Unauthorized');
+        };
+
+        return options.auth(req, reject, next);
+      });
+      this.io.use((socket, next) => {
+        const reject = () => {
+          this.rejected[socket.id] = true;
+          socket.disconnect();
+        };
+
+        return options.auth(socket.handshake, reject, next);
+      });
+    }
+
     this.io.on('connection', (socket) => {
       console.log('a user connected');
       socket.on('disconnect', () => {

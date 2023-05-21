@@ -1,7 +1,11 @@
 const Picko = require('./server');
 const picko = new Picko({
-  auth: (req, res) => {
-    return true;
+  auth: (req, reject, next) => {
+    if (req.headers['x-auth'] !== '123') {
+      reject();
+    } else {
+      next();
+    }
   },
   maxHttpBufferSize: 2e8,
   port: 3000,

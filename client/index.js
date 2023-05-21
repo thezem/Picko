@@ -1,10 +1,18 @@
 const io = require('socket.io-client');
 class PickoClient {
-  constructor(url) {
-    this.socket = io(url || 'http://localhost:3000');
+  constructor(url, headers) {
+    this.socket = io(url || 'http://localhost:3000', {
+      extraHeaders: headers,
+    });
 
     this.socket.on('message', (data) => {
       console.log(`Received ${data}`);
+    });
+    this.socket.on('connect', () => {
+      console.log('Connected');
+    });
+    this.socket.on('disconnect', () => {
+      console.log('Disconnected');
     });
   }
 

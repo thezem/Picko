@@ -21,7 +21,8 @@ npm install picko-http-server
 Once installed, you can initialize the server by creating a new instance of the `Picko` class and passing in any options you desire. Then, you can listen on a port of your choosing using the `listen()` method.
 
 ```javascript
-const Picko = require('picko-http-server');
+const Picko = require('picko/server');
+
 // simple server
 const picko = new Picko();
 // or add auth middleware
@@ -45,7 +46,7 @@ picko.listen(3000, () => {
 You can also create a client instance of Picko using the `PickoClient` class to communicate with the server via Socket.IO. The `PickoClient` class allows you to send GET and POST requests to the server and receive responses.
 
 ```javascript
-const PickoClient = require('picko-http-server/client');
+const PickoClient = require('picko/client');
 const client = new PickoClient();
 
 // Send a GET request to the server
