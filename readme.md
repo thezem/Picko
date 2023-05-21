@@ -8,7 +8,6 @@ Picko is a powerful hybrid HTTP server that utilizes the best of both worlds wit
 - Provides flexible routing options for GET, POST, and other HTTP methods
 - Offers real-time communication and event-driven architecture with Socket.IO
 - Simple and easy-to-use API for HTTP request handling
-- Supports JSON encoding and decoding
 - A middle layer for authentication and authorization
 - A client for communicating with the server via Socket.IO
 
@@ -27,13 +26,16 @@ const Picko = require('picko/server');
 
 // simple server
 const picko = new Picko();
-// or add auth middleware
-const picko = new Picko({
-  auth: (req, res, next) => {
-    // do something
-    next();
-  },
+
+// Authentication for both Express and Socket.io
+picko.authenticate((headers, callback) => {
+  if (headers.authorization === '555') {
+    callback(null, true); // Authorized
+  } else {
+    callback(401, false); // Unauthorized
+  }
 });
+
 // Define your routes
 picko.get('/', (req, res) => {
   res.send('Hello, world!');
@@ -79,18 +81,19 @@ No problem! Picko is built on top of Express, so you can use it just like you wo
 
 ## How it Works
 
-Picko is built on top of the Express framework, providing a familiar API for defining routes and handling HTTP requests. However, it also utilizes the Socket.IO library to enable real-time communication with clients via WebSockets.
+Picko builds upon the Express framework, offering a familiar API for defining routes and handling HTTP requests. It also utilizes the Socket.IO library to enable real-time communication with clients via WebSockets.
 
-The server is created by instantiating the `Picko` class, which sets up an instance of the Express app and a Socket.IO server. The `listen()` method is then called on the server instance to start listening for incoming requests.
+The Picko class sets up an instance of the Express app and a Socket.IO server. Calling the listen() method starts the server, allowing it to listen for incoming requests.
 
-Routes are defined using the `get()` and `post()` methods on the `Picko` instance, which are equivalent to the respective methods in Express. The route handlers are passed in as callback functions that are executed when a request is received.
+Routes are defined using the get() and post() methods on the Picko instance, similar to Express. Route handlers are provided as callback functions that execute when a request is received.
 
-The `PickoClient` class is used to communicate with the server via Socket.IO. It sends GET and POST requests to the server and receives responses via callback functions.
+To communicate with the server via Socket.IO, use the PickoClient class. It supports sending GET and POST requests to the server and receiving responses through callback functions.
 
-## 808
+## Todo
 
-Picko is a powerful hybrid HTTP server that provides the best of both worlds with its combination of Express and Socket.IO. It offers flexible routing options, real-time communication, and event-driven architecture, making it a perfect tool for creating scalable and flexible servers. Give it a try and see how it can benefit your next project!
+- [ ] Add support for Dynamic Routes in socket.io
+- [ ] Add support for Express-like middlewares
 
-###### !NO HASSL3 GODS
+###### !NO HASSL3
 
 ###### @antiihope
