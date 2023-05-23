@@ -22,8 +22,13 @@ picko.post('/sad', (req, res) => {
   res.send(req.body);
 });
 
-picko.put('/sad', (req, res) => {
+picko.put('/test', (req, res) => {
   res.send({ 1: 9 });
+});
+picko.get('/users/:id/:state', (req, res) => {
+  const { id, state } = req.params;
+  // Do something with the user ID, like query a database
+  res.send(`User ${id} ${state} found!`);
 });
 picko.listen(3000, () => {
   console.log('Server started on port 3000');

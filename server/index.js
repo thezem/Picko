@@ -4,6 +4,9 @@ const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
 
+// Import the Router class
+const Router = require('./router');
+
 // Create a class called Picko
 class Picko {
   constructor(options) {
@@ -17,6 +20,7 @@ class Picko {
     });
     this.routes = {}; // Mapping of routes to callbacks
     this.rejected = {}; // Initialize an empty object for rejected requests
+    this.router = new Router(); // Create a new Router instance
 
     // Set up middleware for request and response objects
     this.app.use(express.json()); // Parse request bodies as JSON
@@ -53,17 +57,24 @@ class Picko {
               return callback({ error: 'Forbidden' }, 403);
             }
 
-            const routeKey = `${method}-${path}`;
-            const routeCallback = this.routes[routeKey];
+            // Find the registered route that matches the incoming request path
+            const routeMatch = this.router.find(path);
+            if (!routeMatch) {
+              return callback({ error: 'Route not found' });
+            }
+
+            const { originalPath, params, query } = routeMatch;
+
+            const routeCallback = this.routes[originalPath];
 
             // If a route isn't found, return an error message
             if (!routeCallback) {
               return callback({ error: 'Route not found' });
             }
 
-            // If the route is found, invoke the route's callback function
+            // If the route is found, invoke the route's callback function with the params and query params
             routeCallback(
-              { body: data },
+              { body: data, params, query },
               {
                 send: (data) => {
                   callback({ data });
@@ -93,7 +104,7 @@ class Picko {
 
   // Method to add a new route with a given method and path
   addRoute(method, path, callback) {
-    const routeKey = `${method}-${path}`;
+    const routeKey = path.split('*')[0];
     this.routes[routeKey] = (req, res) => {
       try {
         callback(req, res);
@@ -106,6 +117,9 @@ class Picko {
     this.app[method.toLowerCase()](path, (req, res) => {
       this.routes[routeKey](req, res);
     });
+
+    // Add the route to the router
+    this.router.add(path);
   }
   // Method to add a new GET route
   get(path, callback) {
@@ -138,6 +152,4 @@ class Picko {
     });
   }
 }
-
-// Export the Picko class
 module.exports = Picko;

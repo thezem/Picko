@@ -91,7 +91,7 @@ To communicate with the server via Socket.IO, use the PickoClient class. It supp
 
 ## Todo
 
-- [ ] Add support for Dynamic Routes in socket.io
+- [✅] Add support for Dynamic Routes in socket.io
 - [ ] Add support for Express-like middlewares
 
 ###### !NO HASSL3

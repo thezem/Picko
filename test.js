@@ -15,9 +15,6 @@ PickoClient.put('/sad', { 1: 5 }).then((data) => {
   console.log(data);
 });
 
-PickoClient.post('/users', {
-  name: 'John Doe',
-  email: 'johndoe@example.com',
-}).then((data) => {
+PickoClient.get('/users/love/bad').then((data) => {
   console.log(data);
 });
