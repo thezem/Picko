@@ -4,7 +4,7 @@ const picko = new Picko({
     origin: '*',
   },
 });
-
+console.log(picko.app);
 // Authentication for both Express and Socket.io
 picko.authenticate((headers, callback) => {
   if (headers.authorization === '555') {

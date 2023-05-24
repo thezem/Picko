@@ -37,11 +37,11 @@ class Picko {
     // Set up event listener for incoming socket connections
     this.io.on('connection', (socket) => {
       // Log that a user has connected
-      console.log('a user connected');
+      // console.log('a user connected');
 
       // Listen for disconnection events and log them when they happen
       socket.on('disconnect', () => {
-        console.log('user disconnected');
+        // console.log('user disconnected');
       });
 
       // Function that builds the response to send back to the client
@@ -82,6 +82,15 @@ class Picko {
                 error: (error) => {
                   callback({ error: error.message });
                 },
+                end: (data) => {
+                  callback({ data });
+                },
+                json: (data) => {
+                  callback({ data });
+                },
+                status: (statusCode) => {
+                  callback({ statusCode });
+                },
               }
             );
           }
@@ -110,7 +119,7 @@ class Picko {
         callback(req, res);
       } catch (error) {
         console.error(`Error handling ${method} ${path}:`, error);
-        res.status(500).send('Internal Server Error');
+        res.send('Internal Server Error');
       }
     };
     // Add the route to the Express app with the specified method and path
