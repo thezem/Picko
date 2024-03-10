@@ -14,6 +14,14 @@ picko.authenticate((headers, callback) => {
   }
 });
 
+picko.use('/testuse', (req, res) => {
+  res.send('All requests to /testuse are authenticated');
+});
+
+picko.get('/testuse', (req, res) => {
+  res.send('Get request received');
+});
+
 picko.get('/hello', (req, res) => {
   res.send('Hello World!');
 });

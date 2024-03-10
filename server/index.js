@@ -10,6 +10,7 @@ const Router = require('./router');
 // Create a class called Picko
 class Picko {
   constructor(options) {
+    this.middlewares = []; // Initialize middleware stack
     // Initialize some properties
     this.app = express(); // Express instance
     this.server = http.createServer(this.app); // HTTP server instance
@@ -18,7 +19,7 @@ class Picko {
       maxHttpBufferSize: 2e8, // Specify maximum allowed buffer size
       cors: options.cors, // Allow cross-origin resource sharing
     });
-    this.routes = {}; // Mapping of routes to callbacks
+    this.routes = new Set(); // Mapping of routes to callbacks
     this.rejected = {}; // Initialize an empty object for rejected requests
     this.router = new Router(); // Create a new Router instance
 
@@ -47,65 +48,75 @@ class Picko {
       // Function that builds the response to send back to the client
       const buildResponse = (method, path, data, callback) => {
         // Check authorization before invoking the route's callback
-        this.authFunction(
-          socket.handshake.headers,
-          (statusCode, authorized) => {
-            if (statusCode) {
-              return callback({ error: 'Unauthorized' }, statusCode);
-            }
-            if (!authorized) {
-              return callback({ error: 'Forbidden' }, 403);
-            }
-
-            // Find the registered route that matches the incoming request path
-            const routeMatch = this.router.find(path);
-            if (!routeMatch) {
-              return callback({ error: 'Route not found' });
-            }
-
-            const { originalPath, params, query } = routeMatch;
-
-            const routeCallback = this.routes[originalPath];
-
-            // If a route isn't found, return an error message
-            if (!routeCallback) {
-              return callback({ error: 'Route not found' });
-            }
-
-            // If the route is found, invoke the route's callback function with the params and query params
-            routeCallback(
-              { body: data, params, query },
-              {
-                send: (data) => {
-                  callback({ data });
-                },
-                error: (error) => {
-                  callback({ error: error.message });
-                },
-                end: (data) => {
-                  callback({ data });
-                },
-                json: (data) => {
-                  callback({ data });
-                },
-                status: (statusCode) => {
-                  callback({ statusCode });
-                },
-              }
-            );
+        this.authFunction(socket.handshake.headers, (statusCode, authorized) => {
+          if (statusCode) {
+            return callback({ error: 'Unauthorized' }, statusCode);
           }
-        );
+          if (!authorized) {
+            return callback({ error: 'Forbidden' }, 403);
+          }
+
+          // Find the registered route that matches the incoming request path
+          const routeMatch = this.router.find(path);
+          if (!routeMatch) {
+            return callback({ error: 'Route not found' });
+          }
+
+          const { originalPath, params, query } = routeMatch;
+
+          const routeCallback = Array.from(this.routes).find((route) => route.path === originalPath)?.callback;
+
+          // If a route isn't found, return an error message
+          if (!routeCallback) {
+            return callback({ error: 'Route not found' });
+          }
+
+          // If the route is found, invoke the route's callback function with the params and query params
+          routeCallback(
+            { body: data, params, query },
+            {
+              send: (data) => {
+                callback({ data });
+              },
+              error: (error) => {
+                callback({ error: error.message });
+              },
+              end: (data) => {
+                callback({ data });
+              },
+              json: (data) => {
+                callback({ data });
+              },
+              status: (statusCode) => {
+                callback({ statusCode });
+              },
+            }
+          );
+        });
       };
       // Array of supported HTTP methods
       const supportedMethods = ['GET', 'POST', 'PUT', 'DELETE'];
       // For each of the supported HTTP methods, set up a listener on the socket
       supportedMethods.forEach((method) => {
-        socket.on(method, (path, data, callback) =>
-          buildResponse(method, path, data, callback)
-        );
+        socket.on(method, (path, data, callback) => buildResponse(method, path, data, callback));
       });
     });
   }
+
+  use(path, middleware) {
+    if (typeof path === 'function') {
+      middleware = path;
+      path = '*'; // Apply middleware to all routes if no specific path is provided
+    }
+    this.middlewares.push({ path, middleware });
+    const supportedMethods = ['GET', 'POST', 'PUT', 'DELETE'];
+    supportedMethods.forEach((method) => {
+      this.addRoute(method, path, (req, res) => {
+        middleware(req, res, () => {});
+      });
+    });
+  }
+
   // Method to start listening on a given port
   listen(port, callback) {
     this.server.listen(port, callback);
@@ -114,17 +125,25 @@ class Picko {
   // Method to add a new route with a given method and path
   addRoute(method, path, callback) {
     const routeKey = path.split('*')[0];
-    this.routes[routeKey] = (req, res) => {
-      try {
-        callback(req, res);
-      } catch (error) {
-        console.error(`Error handling ${method} ${path}:`, error);
-        res.send('Internal Server Error');
-      }
-    };
+    this.routes.add({
+      path: routeKey,
+      callback: (req, res) => {
+        try {
+          callback(req, res);
+        } catch (error) {
+          console.error(`Error handling ${method} ${path}:`, error);
+          res.send('Internal Server Error');
+        }
+      },
+    });
     // Add the route to the Express app with the specified method and path
     this.app[method.toLowerCase()](path, (req, res) => {
-      this.routes[routeKey](req, res);
+      // this.routes[routeKey](req, res);
+      this.routes.forEach((route) => {
+        if (path.includes(route.path)) {
+          route.callback(req, res);
+        }
+      });
     });
 
     // Add the route to the router

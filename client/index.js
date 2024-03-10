@@ -10,15 +10,14 @@ class PickoClient {
       reconnectionDelayMax: 5000,
       reconnectionAttempts: 3,
     });
+    this.requestInterceptors = [];
 
     this.useFetch = false;
 
     this.socket.on('message', (data) => console.log(`Received ${data}`));
     this.socket.on('connect', () => console.log('Connected'));
     this.socket.on('disconnect', () => console.log('Disconnected'));
-    this.socket.on('401', (data, statusCode) =>
-      console.log(`Unauthorized (${statusCode}): ${data}`)
-    );
+    this.socket.on('401', (data, statusCode) => console.log(`Unauthorized (${statusCode}): ${data}`));
 
     this.socket.on('error', (error) => {
       console.log(`Socket error: ${error.message}`);
@@ -26,6 +25,10 @@ class PickoClient {
     });
 
     this.timeout = timeout;
+  }
+
+  addRequestInterceptor(interceptor) {
+    this.requestInterceptors.push(interceptor);
   }
 
   async request(method, path, data) {
