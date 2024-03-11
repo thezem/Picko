@@ -109,9 +109,6 @@ class Picko {
       path = '*'; // Apply middleware to all routes if no specific path is provided
     }
     this.middlewares.push({ path, middleware });
-    this.app.use(path, (req, res, next) => {
-      middleware(req, res, next);
-    });
     // do something
   }
 

@@ -1,10 +1,10 @@
 const Picko = require('./server');
+const morgan = require('morgan');
 const picko = new Picko({
   cors: {
     origin: '*',
   },
 });
-console.log(picko.app);
 // Authentication for both Express and Socket.io
 picko.authenticate((headers, callback) => {
   if (headers.authorization === '555') {
@@ -14,12 +14,18 @@ picko.authenticate((headers, callback) => {
   }
 });
 
-picko.use('/testuse', (req, res) => {
-  res.send('All requests to /testuse are authenticated');
+picko.use('/testuse', (req, res, next) => {
+  res.send({ message: 'Middleware 1' });
+});
+
+picko.use('/testuse', (req, res, next) => {
+  console.log('Middleware 2');
+  req.count = 2;
+  next();
 });
 
 picko.get('/testuse', (req, res) => {
-  res.send('Get request received');
+  res.send(`Get request received ${req.count}`);
 });
 
 picko.get('/hello', (req, res) => {
@@ -38,7 +44,8 @@ picko.get('/users/:id/:state', (req, res) => {
   // Do something with the user ID, like query a database
   res.send(`User ${id} ${state} found!`);
 });
-picko.listen(3000, () => {
+
+picko.listen(3001, () => {
   console.log('Server started on port 3000');
 });
 
