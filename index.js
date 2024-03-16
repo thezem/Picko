@@ -2,10 +2,16 @@ const Picko = require('./server');
 const morgan = require('morgan');
 const picko = new Picko(3001);
 
-picko.use((req, res, next) => {
-  console.log('might find', Date.now());
-  next();
+const router = new Picko.Router();
+
+picko.use(morgan('dev'));
+
+router.get('/user', (req, res) => {
+  console.log(req);
+  res.send({ message: 'User route' });
 });
+
+picko.use('/api', router);
 
 picko.post('/testParam/:id', (req, res, next) => {
   res.send(req.body);

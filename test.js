@@ -6,6 +6,10 @@ MyLibClientInstance.post('/testParam/hazoom', 'sad').then(({ response }) => {
   console.log(response);
 });
 
+MyLibClientInstance.get('/api/user', 'sad').then(({ response }) => {
+  console.log(response);
+});
+
 // MyLibClientInstance.get('/testQuery?count=6&name=hamada').then(({ response }) => {
 //   console.log(response);
 // });

@@ -2,6 +2,48 @@ const io = require('socket.io'); // Include the socket.io library for WebSocket 
 const http = require('http'); // Include the http module to create HTTP server
 const url = require('url'); // Include the url module for URL resolution and parsing
 
+class Router {
+  constructor() {
+    this.routes = {};
+    this.middlewares = [];
+    this.indexHolder = 0;
+  }
+
+  use(path, handler) {
+    if (typeof path === 'function') {
+      handler = path;
+      path = '';
+    }
+    this.middlewares.push({ route: path, handler, index: this.indexHolder++ });
+  }
+
+  register(method, path, handler) {
+    if (!this.routes[path]) {
+      this.routes[path] = {};
+    }
+    if (!this.routes[path][method]) {
+      this.routes[path][method] = [];
+    }
+    this.routes[path][method].push({ handler, index: this.indexHolder++ });
+  }
+  // Helper methods to register route handlers for specific HTTP methods
+  post(path, handler) {
+    this.register('post', path, handler);
+  }
+
+  put(path, handler) {
+    this.register('put', path, handler);
+  }
+
+  get(path, handler) {
+    this.register('get', path, handler);
+  }
+
+  delete(path, handler) {
+    this.register('delete', path, handler);
+  }
+}
+
 class MyLib {
   constructor(port) {
     this.routes = {}; // Object to store route handlers
@@ -133,12 +175,31 @@ class MyLib {
   }
 
   use(route, handler) {
-    // Add a new middleware function to the stack
-    if (typeof route === 'function') {
-      handler = route;
-      route = '';
+    if (handler instanceof Router) {
+      // Mount the router: iterate over the router's routes and middlewares
+      for (const path in handler.routes) {
+        for (const method in handler.routes[path]) {
+          handler.routes[path][method].forEach((routeHandler) => {
+            this.register(method, route + path, routeHandler.handler);
+          });
+        }
+      }
+
+      handler.middlewares.forEach((middleware) => {
+        this.middlewares.push({
+          route: route + middleware.route,
+          handler: middleware.handler,
+          index: middleware.index,
+        });
+      });
+    } else {
+      // Add a new middleware function to the stack
+      if (typeof route === 'function') {
+        handler = route;
+        route = '';
+      }
+      this.middlewares.push({ route, handler, index: this.indexHolder++ });
     }
-    this.middlewares.push({ route, handler, index: this.indexHolder++ });
   }
 
   register(method, path, handler) {
@@ -171,3 +232,4 @@ class MyLib {
 }
 
 module.exports = MyLib; // Export the class for use in other modules
+module.exports.Router = Router;
