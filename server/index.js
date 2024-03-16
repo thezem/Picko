@@ -93,7 +93,6 @@ class MyLib {
     // If there are more middlewares in the stack, execute the next one
     if (index < stack.length) {
       const middleware = stack[index];
-      console.log('middleware', middleware);
       middleware(req, res, next);
     }
   }
