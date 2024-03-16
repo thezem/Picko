@@ -2,6 +2,11 @@ const Picko = require('./server');
 const morgan = require('morgan');
 const picko = new Picko(3001);
 
+picko.use('/testQuery', (req, res, next) => {
+  console.log('iam a specific middleware');
+  next();
+});
+
 picko.get('/testParam/:id', (req, res) => {
   res.send(req.params);
 });

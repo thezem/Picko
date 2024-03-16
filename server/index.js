@@ -33,7 +33,8 @@ class MyLib {
       res.end(JSON.stringify(response));
     };
 
-    this.executeMiddleware(handlers, req, res);
+    const stack = this.getMiddlewareStack(routePath).concat(handlers);
+    this.executeMiddleware(stack, req, res);
   }
 
   handleSocketRequest(event, data, socket) {
@@ -53,7 +54,8 @@ class MyLib {
       send: (response) => socket.emit(`${method}:${path}:response`, response),
     };
 
-    this.executeMiddleware(handlers, req, res);
+    const stack = this.getMiddlewareStack(routePath).concat(handlers);
+    this.executeMiddleware(stack, req, res);
   }
 
   executeMiddleware(stack, req, res, index = 0) {
@@ -68,7 +70,8 @@ class MyLib {
   }
 
   getMiddlewareStack(path) {
-    return this.middlewares.filter(({ route }) => route === '' || path.startsWith(route)).map(({ handler }) => handler);
+    let stack = this.middlewares.filter(({ route }) => route === '' || path.startsWith(route)).map(({ handler }) => handler);
+    return stack;
   }
 
   findRouteHandlers(path, method) {
