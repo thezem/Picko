@@ -9,6 +9,7 @@ class MyLib {
     this.httpServer = http.createServer(this.handleHttpRequest.bind(this)); // Create an HTTP server and bind request handler
     this.io = io(this.httpServer); // Initialize a new instance of socket.io by passing the HTTP server object
 
+    this.indexHolder = 0;
     // Listen for new socket connections
     this.io.on('connection', (socket) => {
       // Handle any incoming socket events
@@ -78,7 +79,9 @@ class MyLib {
 
     // Execute middleware and handlers for the socket request
     const stack = this.getMiddlewareStack(routePath).concat(handlers);
-    this.executeMiddleware(stack, req, res);
+    const stackSorted = stack.sort((a, b) => a.index - b.index).map(({ handler }) => handler);
+
+    this.executeMiddleware(stackSorted, req, res);
   }
 
   executeMiddleware(stack, req, res, index = 0) {
@@ -90,13 +93,18 @@ class MyLib {
     // If there are more middlewares in the stack, execute the next one
     if (index < stack.length) {
       const middleware = stack[index];
+      console.log('middleware', middleware);
       middleware(req, res, next);
     }
   }
 
   getMiddlewareStack(path) {
     // Filter and return middleware that applies to the current route
-    let stack = this.middlewares.filter(({ route }) => route === '' || path.startsWith(route)).map(({ handler }) => handler);
+    let stack = this.middlewares
+      .filter(({ route }) => route === '' || path.startsWith(route))
+      .map(({ handler, index }) => {
+        return { handler, index };
+      });
     return stack;
   }
 
@@ -131,7 +139,7 @@ class MyLib {
       handler = route;
       route = '';
     }
-    this.middlewares.push({ route, handler });
+    this.middlewares.push({ route, handler, index: this.indexHolder++ });
   }
 
   register(method, path, handler) {
@@ -142,7 +150,7 @@ class MyLib {
     if (!this.routes[path][method]) {
       this.routes[path][method] = [];
     }
-    this.routes[path][method].push(handler);
+    this.routes[path][method].push({ handler, index: this.indexHolder++ });
   }
 
   // Helper methods to register route handlers for specific HTTP methods

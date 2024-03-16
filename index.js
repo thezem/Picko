@@ -3,7 +3,7 @@ const morgan = require('morgan');
 const picko = new Picko(3001);
 
 picko.use((req, res, next) => {
-  console.log('might find');
+  console.log('might find', Date.now());
   next();
 });
 
@@ -35,4 +35,5 @@ picko.get('/users/:id/:state', (req, res) => {
 
 picko.use((req, res, next) => {
   res.send('not found');
+  // console.log(Date.now());
 });
