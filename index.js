@@ -7,7 +7,7 @@ const router = new Picko.Router();
 picko.use(morgan('dev'));
 
 router.get('/user', (req, res) => {
-  console.log(req);
+  console.log(req.query);
   res.send({ message: 'User route' });
 });
 

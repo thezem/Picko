@@ -31,6 +31,7 @@
     "morgan": "^1.10.0",
     "socket.io": "^4.6.1",
     "socket.io-client": "^4.6.1",
+    "uuid": "^9.0.1",
     "vite": "^4.3.8"
   },
   "description": "Picko is a powerful hybrid HTTP server that utilizes the best of both worlds with its combination of Express and Socket.IO. This package provides a seamless way to handle HTTP requests, making it a perfect tool for developers looking to create a flexible and scalable server."

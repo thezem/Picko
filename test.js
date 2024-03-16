@@ -6,7 +6,7 @@ MyLibClientInstance.post('/testParam/hazoom', 'sad').then(({ response }) => {
   console.log(response);
 });
 
-MyLibClientInstance.get('/api/user', 'sad').then(({ response }) => {
+MyLibClientInstance.get('/api/user?sad=love', 'sad').then(({ response }) => {
   console.log(response);
 });
 
