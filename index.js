@@ -1,24 +1,13 @@
 const Picko = require('./server');
 const morgan = require('morgan');
-const middleware = require('./middleware');
-const picko = new Picko({
-  cors: {
-    origin: '*',
-  },
-});
-// Authentication for both Express and Socket.io
-picko.authenticate((headers, callback) => {
-  if (headers.authorization === '555') {
-    callback(null, true); // Authorized
-  } else {
-    callback(401, false); // Unauthorized
-  }
+const picko = new Picko(3001);
+
+picko.get('/testParam/:id', (req, res) => {
+  res.send(req.params);
 });
 
-picko.use('/sad', middleware);
-
-picko.get('/testuse', (req, res) => {
-  res.send(`Get request received ${req.count}`);
+picko.get('/testQuery', (req, res) => {
+  res.send(req.query);
 });
 
 picko.get('/hello', (req, res) => {
@@ -32,17 +21,9 @@ picko.post('/sad', (req, res) => {
 picko.put('/test', (req, res) => {
   res.send({ 1: 9 });
 });
+
 picko.get('/users/:id/:state', (req, res) => {
   const { id, state } = req.params;
   // Do something with the user ID, like query a database
   res.send(`User ${id} ${state} found!`);
-});
-
-picko.listen(3001, () => {
-  console.log('Server started on port 3000');
-});
-
-picko.post('/users', (req, res) => {
-  console.log(req.body);
-  res.send(req.body);
 });

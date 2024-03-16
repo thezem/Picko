@@ -1,14 +1,11 @@
-const picko = require('./client');
-const PickoClient = new picko('http://localhost:3001', {
-  authorization: '555',
+const MyLibClient = require('./client');
+
+const MyLibClientInstance = new MyLibClient('http://localhost:3001');
+
+MyLibClientInstance.get('/testParam/hazoom').then(({ response }) => {
+  console.log(response);
 });
 
-PickoClient.get('/testuse?count=0').then(({ response }) => {
-  console.log(response.text());
-});
-
-const MyLibClient = new Mylib('http://localhost:3001', {});
-
-MyLibClient.get('/testuse?count=0').then(({ response }) => {
-  console.log(response.text());
+MyLibClientInstance.get('/testQuery?count=6&name=hamada').then(({ response }) => {
+  console.log(response);
 });
