@@ -1,5 +1,6 @@
 const Picko = require('./server');
 const morgan = require('morgan');
+const middleware = require('./middleware');
 const picko = new Picko({
   cors: {
     origin: '*',
@@ -14,15 +15,7 @@ picko.authenticate((headers, callback) => {
   }
 });
 
-picko.use('/testuse', (req, res, next) => {
-  res.send({ message: 'Middleware 1' });
-});
-
-picko.use('/testuse', (req, res, next) => {
-  console.log('Middleware 2');
-  req.count = 2;
-  next();
-});
+picko.use('/sad', middleware);
 
 picko.get('/testuse', (req, res) => {
   res.send(`Get request received ${req.count}`);
