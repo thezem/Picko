@@ -2,7 +2,7 @@ const MyLibClient = require('./client');
 
 const MyLibClientInstance = new MyLibClient('http://localhost:3001');
 
-MyLibClientInstance.get('/testParam/hazoom').then(({ response }) => {
+MyLibClientInstance.post('/testParam/hazoom', 'sad').then(({ response }) => {
   console.log(response);
 });
 

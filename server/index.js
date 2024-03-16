@@ -1,68 +1,93 @@
-const io = require('socket.io');
-const http = require('http');
-const url = require('url');
+const io = require('socket.io'); // Include the socket.io library for WebSocket connections
+const http = require('http'); // Include the http module to create HTTP server
+const url = require('url'); // Include the url module for URL resolution and parsing
 
 class MyLib {
   constructor(port) {
-    this.routes = {};
-    this.middlewares = [];
-    this.httpServer = http.createServer(this.handleHttpRequest.bind(this));
-    this.io = io(this.httpServer);
+    this.routes = {}; // Object to store route handlers
+    this.middlewares = []; // Array to store middleware functions
+    this.httpServer = http.createServer(this.handleHttpRequest.bind(this)); // Create an HTTP server and bind request handler
+    this.io = io(this.httpServer); // Initialize a new instance of socket.io by passing the HTTP server object
 
+    // Listen for new socket connections
     this.io.on('connection', (socket) => {
+      // Handle any incoming socket events
       socket.onAny((event, data) => {
         this.handleSocketRequest(event, data, socket);
       });
     });
 
+    // Start the HTTP server on the specified port
     this.httpServer.listen(port, () => console.log(`Server listening on port ${port}`));
   }
 
   handleHttpRequest(req, res) {
-    const parsedUrl = url.parse(req.url, true);
-    const routePath = parsedUrl.pathname;
-    const method = req.method.toLowerCase();
-    const { handlers, params } = this.findRouteHandlers(routePath, method);
+    const parsedUrl = url.parse(req.url, true); // Parse the request URL
+    const routePath = parsedUrl.pathname; // Extract the pathname as the route path
+    const method = req.method.toLowerCase(); // Get the request method and convert it to lowercase
+    const { handlers, params } = this.findRouteHandlers(routePath, method); // Find the handlers and parameters for the route
 
+    // Attach query, params, and path properties to the request object
     req.query = { ...parsedUrl.query };
     req.params = params;
     req.path = routePath;
 
+    // Define a send method on the response object for sending JSON responses
     res.send = (response) => {
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(response));
     };
 
+    // Get the middleware stack for the current route and execute it along with the route handlers
     const stack = this.getMiddlewareStack(routePath).concat(handlers);
     this.executeMiddleware(stack, req, res);
   }
 
   handleSocketRequest(event, data, socket) {
+    // Split the event string to extract the method and path
     const [method, path] = event.split(':');
     const parsedUrl = url.parse(path, true);
     const routePath = parsedUrl.pathname;
     const { handlers, params } = this.findRouteHandlers(routePath, method);
 
+    // Create request and response objects for the socket event
     const req = {
       body: data,
       query: { ...parsedUrl.query },
       params: params,
       path: routePath,
       socket: socket,
-    };
-    const res = {
-      send: (response) => socket.emit(`${method}:${path}:response`, response),
+      method: method,
+      originalUrl: path,
     };
 
+    const res = {
+      listeners: {},
+      on: (event, listener) => {
+        res.listeners[event] = listener;
+      },
+      send: (response) => {
+        socket.emit(`${method}:${path}:response`, response);
+        if (res.listeners['finish']) res.listeners['finish']();
+        if (res.listeners['end']) res.listeners['end']();
+      },
+      removeListener: (event, listener) => {
+        delete res.listeners[event];
+      },
+    };
+
+    // Execute middleware and handlers for the socket request
     const stack = this.getMiddlewareStack(routePath).concat(handlers);
     this.executeMiddleware(stack, req, res);
   }
 
   executeMiddleware(stack, req, res, index = 0) {
+    // Recursive function to execute each middleware in the stack
     const next = () => {
       this.executeMiddleware(stack, req, res, index + 1);
     };
 
+    // If there are more middlewares in the stack, execute the next one
     if (index < stack.length) {
       const middleware = stack[index];
       middleware(req, res, next);
@@ -70,14 +95,15 @@ class MyLib {
   }
 
   getMiddlewareStack(path) {
+    // Filter and return middleware that applies to the current route
     let stack = this.middlewares.filter(({ route }) => route === '' || path.startsWith(route)).map(({ handler }) => handler);
     return stack;
   }
 
   findRouteHandlers(path, method) {
+    // Find route handlers that match the given path and method
     let params = {};
     let handlers = [];
-
     for (const route in this.routes) {
       const routePattern = new RegExp('^' + route.replace(/:\w+/g, '(\\w+)') + '$');
       if (routePattern.test(path)) {
@@ -100,6 +126,7 @@ class MyLib {
   }
 
   use(route, handler) {
+    // Add a new middleware function to the stack
     if (typeof route === 'function') {
       handler = route;
       route = '';
@@ -108,6 +135,7 @@ class MyLib {
   }
 
   register(method, path, handler) {
+    // Register a new route handler for a specific method and path
     if (!this.routes[path]) {
       this.routes[path] = {};
     }
@@ -117,6 +145,7 @@ class MyLib {
     this.routes[path][method].push(handler);
   }
 
+  // Helper methods to register route handlers for specific HTTP methods
   post(path, handler) {
     this.register('post', path, handler);
   }
@@ -134,4 +163,4 @@ class MyLib {
   }
 }
 
-module.exports = MyLib;
+module.exports = MyLib; // Export the class for use in other modules

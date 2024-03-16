@@ -2,13 +2,13 @@ const Picko = require('./server');
 const morgan = require('morgan');
 const picko = new Picko(3001);
 
-picko.use('/testQuery', (req, res, next) => {
-  console.log('iam a specific middleware');
+picko.use((req, res, next) => {
+  console.log('might find');
   next();
 });
 
-picko.get('/testParam/:id', (req, res) => {
-  res.send(req.params);
+picko.post('/testParam/:id', (req, res, next) => {
+  res.send(req.body);
 });
 
 picko.get('/testQuery', (req, res) => {
@@ -31,4 +31,8 @@ picko.get('/users/:id/:state', (req, res) => {
   const { id, state } = req.params;
   // Do something with the user ID, like query a database
   res.send(`User ${id} ${state} found!`);
+});
+
+picko.use((req, res, next) => {
+  res.send('not found');
 });
