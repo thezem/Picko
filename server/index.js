@@ -56,7 +56,7 @@ class MyLib {
     this.io.on('connection', (socket) => {
       // Handle any incoming socket events
       socket.onAny((event, data) => {
-        this.handleSocketRequest(event, data, socket);
+        this.handleSocketRequest(event, data?.body, data?._requestId, socket);
       });
     });
 
@@ -83,10 +83,12 @@ class MyLib {
 
     // Get the middleware stack for the current route and execute it along with the route handlers
     const stack = this.getMiddlewareStack(routePath).concat(handlers);
-    this.executeMiddleware(stack, req, res);
+    const stackSorted = stack.sort((a, b) => a.index - b.index).map(({ handler }) => handler);
+
+    this.executeMiddleware(stackSorted, req, res);
   }
 
-  handleSocketRequest(event, data, socket) {
+  handleSocketRequest(event, data, requestId, socket) {
     // Split the event string to extract the method and path
     const [method, path] = event.split(':');
     const parsedUrl = url.parse(path, true);
@@ -110,7 +112,10 @@ class MyLib {
         res.listeners[event] = listener;
       },
       send: (response) => {
-        socket.emit(`${method}:${path}:response`, response);
+        const event = `${method}:${path}`;
+        const responseEvent = `${event}:response:${requestId}`;
+
+        socket.emit(responseEvent, response);
         if (res.listeners['finish']) res.listeners['finish']();
         if (res.listeners['end']) res.listeners['end']();
       },
